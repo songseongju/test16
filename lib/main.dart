@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
@@ -13,21 +14,20 @@ class LinkPreviewController extends GetxController {
 
   Future<void> fetchLinkPreview(String url) async {
     try {
-      // http:// or https:// or www. 생략 안 써두 됨.
+      // Add "https://" prefix if missing
       if (!url.startsWith('http://') && !url.startsWith('https://')) {
         url = 'https://' + url;
-      } else if(!url.startsWith('https://') && !url.startsWith('http://')){
-        url = 'https://www.' + url;
       }
 
       var response = await http.get(
         Uri.parse(url),
         // url : url 파싱.
         headers: {'Accept-Charset': 'utf-8'},
-        // headers: 한글 인코딩.
+        // 1. 한글 깨짐 방지
       );
       if (response.statusCode == 200) {
-        var document = parse(response.body);
+        var document = parse(utf8.decode(response.bodyBytes));
+        // 2. 한글 깨짐 방지
         var metaTags = document.getElementsByTagName('meta');
 
         String? foundImageUrl;
@@ -43,6 +43,7 @@ class LinkPreviewController extends GetxController {
             foundDescription = content;
           }
         }
+
         if (foundImageUrl != null && foundDescription != null) {
           imageUrl.value = foundImageUrl;
           description.value = foundDescription;
